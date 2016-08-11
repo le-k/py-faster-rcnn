@@ -20,6 +20,8 @@ import pprint
 import numpy as np
 import sys
 
+from IPython import embed
+
 def parse_args():
     """
     Parse input arguments
@@ -42,7 +44,7 @@ def parse_args():
                         default=None, type=str)
     parser.add_argument('--imdb', dest='imdb_name',
                         help='dataset to train on',
-                        default='voc_2007_trainval', type=str)
+                        default='houzzdata0_train', type=str)
     parser.add_argument('--rand', dest='randomize',
                         help='randomize (do not use a fixed seed)',
                         action='store_true')
@@ -71,7 +73,7 @@ def combined_roidb(imdb_names):
     if len(roidbs) > 1:
         for r in roidbs[1:]:
             roidb.extend(r)
-        imdb = datasets.imdb.imdb(imdb_names)
+        imdb = datasets.imdb(imdb_names)
     else:
         imdb = get_imdb(imdb_names)
     return imdb, roidb
@@ -104,7 +106,7 @@ if __name__ == '__main__':
     imdb, roidb = combined_roidb(args.imdb_name)
     print '{:d} roidb entries'.format(len(roidb))
 
-    output_dir = get_output_dir(imdb)
+    output_dir = get_output_dir(imdb, None)
     print 'Output will be saved to `{:s}`'.format(output_dir)
 
     train_net(args.solver, roidb, output_dir,

@@ -11,6 +11,7 @@ import numpy as np
 import numpy.random as npr
 from fast_rcnn.config import cfg
 from fast_rcnn.bbox_transform import bbox_transform
+from generate_anchors import generate_anchors
 from utils.cython_bbox import bbox_overlaps
 
 DEBUG = False
@@ -22,6 +23,16 @@ class ProposalTargetLayer(caffe.Layer):
     """
 
     def setup(self, bottom, top):
+        self._anchors = generate_anchors()
+        self._num_anchors = self._anchors.shape[0]
+
+        if DEBUG:
+            print 'anchors:'
+            print self._anchors
+            self._count = 0
+            self._fg_num = 0
+            self._bg_num = 0
+
         layer_params = yaml.load(self.param_str_)
         self._num_classes = layer_params['num_classes']
 

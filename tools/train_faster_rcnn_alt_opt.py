@@ -18,6 +18,7 @@ from fast_rcnn.train import get_training_roidb, train_net
 from fast_rcnn.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
 from datasets.factory import get_imdb
 from rpn.generate import imdb_proposals
+import datasets.imdb
 import argparse
 import pprint
 import numpy as np
@@ -25,6 +26,7 @@ import sys, os
 import multiprocessing as mp
 import cPickle
 import shutil
+from IPython import embed
 
 def parse_args():
     """
@@ -45,7 +47,7 @@ def parse_args():
                         default=None, type=str)
     parser.add_argument('--imdb', dest='imdb_name',
                         help='dataset to train on',
-                        default='voc_2007_trainval', type=str)
+                        default='houzzdata0_train', type=str)
     parser.add_argument('--set', dest='set_cfgs',
                         help='set config keys', default=None,
                         nargs=argparse.REMAINDER)
@@ -75,13 +77,17 @@ def get_solvers(net_name):
                [net_name, n, 'stage1_fast_rcnn_solver30k40k.pt'],
                [net_name, n, 'stage2_rpn_solver60k80k.pt'],
                [net_name, n, 'stage2_fast_rcnn_solver30k40k.pt']]
-    solvers = [os.path.join(cfg.MODELS_DIR, *s) for s in solvers]
+    solvers = [os.path.join(cfg.ROOT_DIR, 'models', *s) for s in solvers]
     # Iterations for each training stage
-    max_iters = [80000, 40000, 80000, 40000]
-    # max_iters = [100, 100, 100, 100]
+    #max_iters = [80000, 40000, 80000, 40000]
+    #max_iters = [300, 300, 300, 300]
+    #max_iters = [136000, 136000, 136000, 136000]
+    max_iters = [136030, 136030, 136030, 136030]
+
+    print "max_iters: {}".format(max_iters)
     # Test prototxt for the RPN
     rpn_test_prototxt = os.path.join(
-        cfg.MODELS_DIR, net_name, n, 'rpn_test.pt')
+        cfg.ROOT_DIR, 'models', net_name, n, 'rpn_test.pt')
     return solvers, max_iters, rpn_test_prototxt
 
 # ------------------------------------------------------------------------------
@@ -102,6 +108,8 @@ def _init_caffe(cfg):
     caffe.set_mode_gpu()
     caffe.set_device(cfg.GPU_ID)
 
+#def train_rpn(queue=None, imdb_name=None, init_model=None, solver=None,
+              #max_iters=None, cfg=None, args=None):
 def train_rpn(queue=None, imdb_name=None, init_model=None, solver=None,
               max_iters=None, cfg=None):
     """Train a Region Proposal Network in a separate training process.
@@ -121,16 +129,36 @@ def train_rpn(queue=None, imdb_name=None, init_model=None, solver=None,
 
     roidb, imdb = get_roidb(imdb_name)
     print 'roidb len: {}'.format(len(roidb))
-    output_dir = get_output_dir(imdb)
+    output_dir = get_output_dir(imdb, None)
     print 'Output will be saved to `{:s}`'.format(output_dir)
 
-    model_paths = train_net(solver, roidb, output_dir,
-                            pretrained_model=init_model,
-                            max_iters=max_iters)
-    # Cleanup all but the final model
-    for i in model_paths[:-1]:
-        os.remove(i)
-    rpn_model_path = model_paths[-1]
+    infix = ('_' + cfg.TRAIN.SNAPSHOT_INFIX
+             if cfg.TRAIN.SNAPSHOT_INFIX != '' else '')
+    snapshot_prefix = None 
+    #if args.net_name == "ZF":
+        #snapshot_prefix = "zf_rpn"
+    #if args.net_name == "VGG16":
+        #snapshot_prefix = "vgg16_rpn"
+    with open(solver, 'r') as fh:
+        for line in fh:
+            if "snapshot_prefix" in line:
+                snapshot_prefix = line.strip().split('"')[1]
+                break
+    assert snapshot_prefix is not None, "Net name unknown for snapshot prefix in training rpn!"
+    print "snapshot_prefix: {}".format(snapshot_prefix)
+    filename = (snapshot_prefix + infix +
+                '_iter_{:d}'.format(max_iters) + '.caffemodel')
+    rpn_model_path = os.path.join(output_dir, filename)
+    if os.path.exists(rpn_model_path):
+        print "{} exists, skip this part of training!".format(rpn_model_path)
+    else:
+        model_paths = train_net(solver, roidb, output_dir,
+                                pretrained_model=init_model,
+                                max_iters=max_iters)
+        # Cleanup all but the final model
+        for i in model_paths[:-1]:
+            os.remove(i)
+        rpn_model_path = model_paths[-1]
     # Send final model path through the multiprocessing queue
     queue.put({'model_path': rpn_model_path})
 
@@ -153,21 +181,23 @@ def rpn_generate(queue=None, imdb_name=None, rpn_model_path=None, cfg=None,
     # proposals. This might cause a minor loss in mAP (less proposal jittering).
     imdb = get_imdb(imdb_name)
     print 'Loaded dataset `{:s}` for proposal generation'.format(imdb.name)
-
-    # Load RPN and configure output directory
-    rpn_net = caffe.Net(rpn_test_prototxt, rpn_model_path, caffe.TEST)
-    output_dir = get_output_dir(imdb)
-    print 'Output will be saved to `{:s}`'.format(output_dir)
-    # Generate proposals on the imdb
-    rpn_proposals = imdb_proposals(rpn_net, imdb)
-    # Write proposals to disk and send the proposal file path through the
-    # multiprocessing queue
+    output_dir = get_output_dir(imdb, None)
     rpn_net_name = os.path.splitext(os.path.basename(rpn_model_path))[0]
     rpn_proposals_path = os.path.join(
         output_dir, rpn_net_name + '_proposals.pkl')
-    with open(rpn_proposals_path, 'wb') as f:
-        cPickle.dump(rpn_proposals, f, cPickle.HIGHEST_PROTOCOL)
-    print 'Wrote RPN proposals to {}'.format(rpn_proposals_path)
+    if os.path.exists(rpn_proposals_path):
+        print "{} exists, skip this part of training".format(rpn_proposals_path)
+    else:
+        # Load RPN and configure output directory
+        rpn_net = caffe.Net(rpn_test_prototxt, rpn_model_path, caffe.TEST)
+        print 'Output will be saved to `{:s}`'.format(output_dir)
+        # Generate proposals on the imdb
+        rpn_proposals = imdb_proposals(rpn_net, imdb)
+        # Write proposals to disk and send the proposal file path through the
+        # multiprocessing queue
+        with open(rpn_proposals_path, 'wb') as f:
+            cPickle.dump(rpn_proposals, f, cPickle.HIGHEST_PROTOCOL)
+        print 'Wrote RPN proposals to {}'.format(rpn_proposals_path)
     queue.put({'proposal_path': rpn_proposals_path})
 
 def train_fast_rcnn(queue=None, imdb_name=None, init_model=None, solver=None,
@@ -187,16 +217,33 @@ def train_fast_rcnn(queue=None, imdb_name=None, init_model=None, solver=None,
     _init_caffe(cfg)
 
     roidb, imdb = get_roidb(imdb_name, rpn_file=rpn_file)
-    output_dir = get_output_dir(imdb)
+    output_dir = get_output_dir(imdb, None)
     print 'Output will be saved to `{:s}`'.format(output_dir)
-    # Train Fast R-CNN
-    model_paths = train_net(solver, roidb, output_dir,
-                            pretrained_model=init_model,
-                            max_iters=max_iters)
-    # Cleanup all but the final model
-    for i in model_paths[:-1]:
-        os.remove(i)
-    fast_rcnn_model_path = model_paths[-1]
+
+    infix = ('_' + cfg.TRAIN.SNAPSHOT_INFIX
+             if cfg.TRAIN.SNAPSHOT_INFIX != '' else '')
+    snapshot_prefix = None 
+    with open(solver, 'r') as fh:
+        for line in fh:
+            if "snapshot_prefix" in line:
+                snapshot_prefix = line.strip().split('"')[1]
+                break
+    assert snapshot_prefix is not None, "Net name unknown for snapshot prefix in trainging fast rcnn!"
+    print "snapshot_prefix: {}".format(snapshot_prefix)
+    filename = (snapshot_prefix + infix +
+                '_iter_{:d}'.format(max_iters) + '.caffemodel')
+    fast_rcnn_model_path = os.path.join(output_dir, filename)
+    if os.path.exists(fast_rcnn_model_path):
+        print "{} exists, skip this part of training!".format(fast_rcnn_model_path)
+    else:
+        # Train Fast R-CNN
+        model_paths = train_net(solver, roidb, output_dir,
+                                pretrained_model=init_model,
+                                max_iters=max_iters)
+        # Cleanup all but the final model
+        for i in model_paths[:-1]:
+            os.remove(i)
+        fast_rcnn_model_path = model_paths[-1]
     # Send Fast R-CNN model path over the multiprocessing queue
     queue.put({'model_path': fast_rcnn_model_path})
 
@@ -229,17 +276,24 @@ if __name__ == '__main__':
     print '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 
     cfg.TRAIN.SNAPSHOT_INFIX = 'stage1'
+
     mp_kwargs = dict(
             queue=mp_queue,
             imdb_name=args.imdb_name,
             init_model=args.pretrained_model,
             solver=solvers[0],
             max_iters=max_iters[0],
-            cfg=cfg)
+            cfg=cfg
+            )
     p = mp.Process(target=train_rpn, kwargs=mp_kwargs)
     p.start()
     rpn_stage1_out = mp_queue.get()
     p.join()
+   
+    
+    #print 'Done: stage 1 RPN, init from ImageNet model'
+    #embed()
+    
 
     print '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
     print 'Stage 1 RPN, generate proposals'
@@ -273,6 +327,18 @@ if __name__ == '__main__':
     p.start()
     fast_rcnn_stage1_out = mp_queue.get()
     p.join()
+    
+    #Not using multiprocessing, for easier debug
+    #train_fast_rcnn(
+            #queue=mp_queue,
+            #imdb_name=args.imdb_name,
+            #init_model=args.pretrained_model,
+            #solver=solvers[1],
+            #max_iters=max_iters[1],
+            #cfg=cfg,
+            #rpn_file=rpn_stage1_out['proposal_path'])
+    #fast_rcnn_stage1_out = mp_queue.get()
+
 
     print '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
     print 'Stage 2 RPN, init from stage 1 Fast R-CNN model'
@@ -285,7 +351,8 @@ if __name__ == '__main__':
             init_model=str(fast_rcnn_stage1_out['model_path']),
             solver=solvers[2],
             max_iters=max_iters[2],
-            cfg=cfg)
+            cfg=cfg,
+            )
     p = mp.Process(target=train_rpn, kwargs=mp_kwargs)
     p.start()
     rpn_stage2_out = mp_queue.get()

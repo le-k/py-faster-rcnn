@@ -24,11 +24,8 @@ class AnchorTargetLayer(caffe.Layer):
     """
 
     def setup(self, bottom, top):
-        layer_params = yaml.load(self.param_str_)
-        anchor_scales = layer_params.get('scales', (8, 16, 32))
-        self._anchors = generate_anchors(scales=np.array(anchor_scales))
+        self._anchors = generate_anchors()
         self._num_anchors = self._anchors.shape[0]
-        self._feat_stride = layer_params['feat_stride']
 
         if DEBUG:
             print 'anchors:'
@@ -44,6 +41,9 @@ class AnchorTargetLayer(caffe.Layer):
             self._fg_sum = 0
             self._bg_sum = 0
             self._count = 0
+
+        layer_params = yaml.load(self.param_str_)
+        self._feat_stride = layer_params['feat_stride']
 
         # allow boxes to sit over the edge by a small amount
         self._allowed_border = layer_params.get('allowed_border', 0)
@@ -81,13 +81,13 @@ class AnchorTargetLayer(caffe.Layer):
         # im_info
         im_info = bottom[2].data[0, :]
 
-        if DEBUG:
+        if 0 and DEBUG:
             print ''
             print 'im_size: ({}, {})'.format(im_info[0], im_info[1])
             print 'scale: {}'.format(im_info[2])
             print 'height, width: ({}, {})'.format(height, width)
-            print 'rpn: gt_boxes.shape', gt_boxes.shape
-            print 'rpn: gt_boxes', gt_boxes
+            #print 'rpn: gt_boxes.shape', gt_boxes.shape
+            #print 'rpn: gt_boxes', gt_boxes
 
         # 1. Generate proposals from bbox deltas and shifted anchors
         shift_x = np.arange(0, width) * self._feat_stride

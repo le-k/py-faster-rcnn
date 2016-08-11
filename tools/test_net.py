@@ -38,17 +38,12 @@ def parse_args():
                         default=True, type=bool)
     parser.add_argument('--imdb', dest='imdb_name',
                         help='dataset to test',
-                        default='voc_2007_test', type=str)
+                        default='houzzdata0_test', type=str)
     parser.add_argument('--comp', dest='comp_mode', help='competition mode',
                         action='store_true')
     parser.add_argument('--set', dest='set_cfgs',
                         help='set config keys', default=None,
                         nargs=argparse.REMAINDER)
-    parser.add_argument('--vis', dest='vis', help='visualize detections',
-                        action='store_true')
-    parser.add_argument('--num_dets', dest='max_per_image',
-                        help='max number of detections per image',
-                        default=100, type=int)
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -87,4 +82,4 @@ if __name__ == '__main__':
     if not cfg.TEST.HAS_RPN:
         imdb.set_proposal_method(cfg.TEST.PROPOSAL_METHOD)
 
-    test_net(net, imdb, max_per_image=args.max_per_image, vis=args.vis)
+    test_net(net, imdb)
