@@ -1,0 +1,18 @@
+train_net: "models/RESNET/faster_rcnn_end2end_houzzdata1/train101_frz-conv4v-new.prototxt"
+base_lr: 0.001
+#base_lr: 0.0001
+lr_policy: "step"
+gamma: 0.1
+#stepsize: 45100
+stepsize: 100000
+display: 20
+average_loss: 100
+# iter_size: 1
+momentum: 0.9
+weight_decay: 0.0001
+# We disable standard caffe solver snapshotting and implement our own snapshot
+# function
+snapshot: 0
+# We still use the snapshot prefix, though
+snapshot_prefix: "resnet101_faster_rcnn"
+iter_size: 2

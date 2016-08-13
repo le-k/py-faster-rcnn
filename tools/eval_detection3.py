@@ -542,7 +542,9 @@ if __name__ == "__main__":
     #predict_dir = "./work_data/faster-rcnn/VGG16/dets_end2end_n0016_train_nosquare_i90200_compressed_houzzdata1_val_nosquare/t0.2"
     #predict_dir = "./work_data/faster-rcnn/VGG16/dets_end2end_n0017_train_nosquare_i40000_houzzdata1_val_nosquare/t0.2"
     #predict_dir = "./work_data/faster-rcnn/VGG16/dets_end2end_n0016_train_nosquare_i90200_svd3_houzzdata1_val_nosquare/mulscl3/t0.2"
-    predict_dir = "./work_data/faster-rcnn/VGG16/dets_end2end_n0099_train_nosquare_i30_houzzdata1_val_nosquare/mulscl1/t0.2"
+
+    #predict_dir = "./work_data/faster-rcnn/VGG16/dets_end2end_n0099_train_nosquare_i30_houzzdata1_val_nosquare/mulscl1/t0.2"
+    predict_dir = "./work_data/faster-rcnn/RESNET/dets_end2end_n0088_train_nosquare_i20_houzzdata1_val_nosquare/mulscl1/t0.2"
 
     conf_thresh = 0.2
     #conf_thresh = 0.5
