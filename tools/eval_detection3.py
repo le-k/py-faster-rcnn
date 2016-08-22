@@ -544,11 +544,13 @@ if __name__ == "__main__":
     #predict_dir = "./work_data/faster-rcnn/VGG16/dets_end2end_n0016_train_nosquare_i90200_svd3_houzzdata1_val_nosquare/mulscl3/t0.2"
 
     #predict_dir = "./work_data/faster-rcnn/VGG16/dets_end2end_n0099_train_nosquare_i30_houzzdata1_val_nosquare/mulscl1/t0.2"
-    predict_dir = "./work_data/faster-rcnn/RESNET/dets_end2end_n0088_train_nosquare_i20_houzzdata1_val_nosquare/mulscl1/t0.2"
+    #predict_dir = "./work_data/faster-rcnn/RESNET/dets_end2end_n0088_train_nosquare_i20_houzzdata1_val_nosquare/mulscl1/t0.2"
+    #predict_dir = "./work_data/faster-rcnn/RESNET/dets_end2end_n0080_train_nosquare_i150000_houzzdata1_val_nosquare/mulscl1/t0.01"
+    #predict_dir = "./work_data/faster-rcnn/RESNET/dets_end2end_n0081_train_nosquare_i90000_houzzdata1_val_nosquare/mulscl1/t0.01"
+    predict_dir = "./work_data/faster-rcnn/RESNET/dets_end2end_v8_n0063_train_nosquare_i120000_houzzdata1_val_nosquare/mulscl1/t0.01"
 
-    conf_thresh = 0.2
-    #conf_thresh = 0.5
-    #conf_thresh = 0.1
+    conf_thresh = 0.03
+    #conf_thresh = 0.20
     #conf_thresh = 0.001
 
     #gt_type = 0 #x and y are left upper corner

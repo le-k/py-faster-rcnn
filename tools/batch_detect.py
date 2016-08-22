@@ -353,7 +353,7 @@ if __name__ == '__main__':
     args = parse_args()
     GM.conf_thresh = args.conf_thresh
     set_scales(args.scale_num)
-    dest_path = os.path.join(args.dest_path_root, "mulscl{}/t{:0.1f}/".format(args.scale_num, args.conf_thresh) )
+    dest_path = os.path.join(args.dest_path_root, "mulscl{}/t{:0.2f}/".format(args.scale_num, args.conf_thresh) )
     caffemodel = args.caffemodel
     prototxt = args.prototxt
     img_list = args.img_list
