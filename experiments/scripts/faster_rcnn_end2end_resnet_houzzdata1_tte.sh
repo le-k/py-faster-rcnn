@@ -6,7 +6,7 @@
 # ./experiments/scripts/faster_rcnn_end2end_resnet_houzzdata1_tte.sh 1 RESNET --set TRAIN.SNAPSHOT_INFIX n0047 TRAIN.SCALES "[400,500,600]"
 # ./experiments/scripts/faster_rcnn_end2end_resnet_houzzdata1_tte.sh 1 RESNET --set TRAIN.SNAPSHOT_INFIX n0047 TRAIN.FG_THRESH 0.8
 # ./experiments/scripts/faster_rcnn_end2end_resnet_houzzdata1_tte.sh 1 RESNET --set TRAIN.SNAPSHOT_INFIX n0064 TRAIN.SCALES "[400,600,800,1000]" TRAIN.MAX_SIZE 1200
-# ./experiments/scripts/faster_rcnn_end2end_resnet_houzzdata1_tte.sh 1 RESNET --set TRAIN.SNAPSHOT_INFIX n0082
+# ./experiments/scripts/faster_rcnn_end2end_resnet_houzzdata1_tte.sh 0 RESNET --set TRAIN.SNAPSHOT_INFIX n0082
 
 
 set -x
@@ -19,9 +19,9 @@ NET=$2
 NET_lc=${NET,,}
 #ITERS=70000
 #ITERS=136000
-ITERS=90000
+#ITERS=90000
 #ITERS=100000
-#ITERS=150000
+ITERS=150000
 #ITERS=196000
 #ITERS=80
 
